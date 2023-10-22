@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"time"
 )
 
 type Config struct {
@@ -45,8 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 	if config.TriggerDirectories == nil || len(config.TriggerDirectories) == 0 {
-		fmt.Println("There needs to be at least one trigger directory")
-		os.Exit(1)
+		config.TriggerDirectories[0] = "*"
 	}
 	if config.Tasks == nil || len(config.Tasks) == 0 {
 		fmt.Println("There needs to be at least one task")
@@ -55,10 +56,27 @@ func main() {
 
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("LitePipe version 0.0.1")
+	fmt.Println("\033[30;46m LitePipe \033[0m version 0.0.2")
 	fmt.Printf("PID: %d\n", os.Getpid())
-	fmt.Printf("Listening on port %d\n", config.Port)
+	fmt.Printf("Listening on port %d\n\n", config.Port)
 	http.ListenAndServe(":3001", nil)
+}
+
+type GitCommit struct {
+	Added    []string `json:"added"`
+	Modified []string `json:"modified"`
+	Removed  []string `json:"removed"`
+	ID       string   `json:"id"`
+	Message  string   `json:"message"`
+	Author   struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"author"`
+	Timestamp string `json:"timestamp"`
+}
+
+type GitPushEvent struct {
+	Commit GitCommit `json:"head_commit"`
 }
 
 func HandleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +95,7 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// try and parse webhook payload
-	var payload map[string]interface{}
+	var payload GitPushEvent
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		fmt.Println("Failed to parse JSON payload:", err)
@@ -85,14 +103,49 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadJSON, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		fmt.Println("Failed to marshal payload to JSON:", err)
-	} else {
-		fmt.Printf("Payload as JSON:\n%s\n", payloadJSON)
+	w.WriteHeader(http.StatusOK)
+
+	var commit GitCommit = payload.Commit
+	fmt.Println("--------")
+	fmt.Printf("Received webhook push event for commit \n%s \n\"%s\" \nat %s\n", commit.ID, commit.Message, time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
+
+	if len(commit.Added) > 0 {
+		fmt.Println("\nAdded files:")
+		for _, file := range commit.Added {
+			if pathsMatch(file) {
+				fmt.Printf("\u001b[7m%s\033[0m\n", file)
+			} else {
+				fmt.Println(file)
+
+			}
+		}
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if len(commit.Modified) > 0 {
+		fmt.Println("\nModified files:")
+		for _, file := range commit.Modified {
+
+			if pathsMatch(file) {
+				fmt.Printf("\u001b[7m%s\033[0m\n", file)
+			} else {
+				fmt.Println(file)
+			}
+		}
+	}
+
+	if len(commit.Removed) > 0 {
+		fmt.Println("\nRemoved files:")
+		for _, file := range commit.Removed {
+			if pathsMatch(file) {
+				fmt.Printf("\u001b[7m%s\033[0m\n", file)
+			} else {
+				fmt.Println(file)
+
+			}
+		}
+	}
+
+	fmt.Println()
 }
 
 func verifyWebhookSignature(signature string, payload []byte) bool {
@@ -106,4 +159,18 @@ func verifyWebhookSignature(signature string, payload []byte) bool {
 	expectedSignature := "sha1=" + expectedMAC
 
 	return hmac.Equal([]byte(expectedSignature), []byte(signature))
+}
+
+func pathsMatch(path string) bool {
+	for _, pattern := range config.TriggerDirectories {
+		matched, err := filepath.Match(pattern, path)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return false
+		}
+		if matched {
+			return true
+		}
+	}
+	return false
 }
