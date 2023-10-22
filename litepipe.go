@@ -4,40 +4,36 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/julienschmidt/httprouter"
 )
 
-// Baked in values for now
 const (
 	port          = 3001
 	webhookSecret = ""
 )
 
 func main() {
-	router := httprouter.New()
 
-	router.POST("/", HandleWebhook)
+	http.HandleFunc("/", HandleWebhook)
 
 	fmt.Println("LitePipe version 0.0.1")
 	fmt.Printf("PID: %d\n", os.Getpid())
-	fmt.Printf("Listening on port %d", port)
-	addr := fmt.Sprintf(":%d", port)
-	http.ListenAndServe(addr, router)
-
+	fmt.Printf("Listening on port %d\n", port)
+	http.ListenAndServe(":3001", nil)
 }
 
-func HandleWebhook(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 		return
 	}
 
+	// verify webhook signature
 	signature := r.Header.Get("X-Hub-Signature")
 	if !verifyWebhookSignature(signature, body) {
 		fmt.Println("Invalid Webhook")
@@ -45,7 +41,21 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		return
 	}
 
-	fmt.Println("Valid Webhook")
+	// try and parse webhook payload
+	var payload map[string]interface{}
+	err = json.Unmarshal(body, &payload)
+	if err != nil {
+		fmt.Println("Failed to parse JSON payload:", err)
+		http.Error(w, "Failed to parse JSON payload", http.StatusInternalServerError)
+		return
+	}
+
+	payloadJSON, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		fmt.Println("Failed to marshal payload to JSON:", err)
+	} else {
+		fmt.Printf("Payload as JSON:\n%s\n", payloadJSON)
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
