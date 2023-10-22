@@ -24,7 +24,11 @@ type Config struct {
 var config Config
 
 func main() {
-	// try to read the config file
+	loadConfig()
+	start()
+}
+
+func loadConfig() {
 	file, err := os.Open("config.json")
 	if err != nil {
 		fmt.Printf("Error opening config file: %v\n", err)
@@ -39,28 +43,34 @@ func main() {
 		os.Exit(1)
 	}
 
-	// defaults and validations
+	setDefaultsAndValidateConfig()
+}
+
+func setDefaultsAndValidateConfig() {
 	if config.Port == 0 {
 		config.Port = 3001
 	}
 	if config.WebhookSecret == "" {
-		fmt.Println("You need to include your webhook secret")
+		fmt.Println("You need to provide your webhook secret")
 		os.Exit(1)
 	}
 	if config.TriggerDirectories == nil || len(config.TriggerDirectories) == 0 {
-		config.TriggerDirectories[0] = "*"
+		config.TriggerDirectories = []string{"*"}
 	}
 	if config.Tasks == nil || len(config.Tasks) == 0 {
 		fmt.Println("There needs to be at least one task")
 		os.Exit(1)
 	}
+}
 
+func start() {
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("\033[30;46m LitePipe \033[0m version 0.1.2")
+	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.4")
 	fmt.Printf("PID: %d\n", os.Getpid())
 	fmt.Printf("Listening on port %d\n\n", config.Port)
-	http.ListenAndServe(":3001", nil)
+
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
 }
 
 type GitCommit struct {
@@ -87,7 +97,6 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// verify webhook signature
 	signature := r.Header.Get("X-Hub-Signature")
 	if !verifyWebhookSignature(signature, body) {
 		fmt.Println("Invalid Webhook")
@@ -95,7 +104,6 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// try and parse webhook payload
 	var payload GitPushEvent
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
@@ -106,8 +114,12 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
+	processWebhookPayload(payload)
+}
+
+func processWebhookPayload(payload GitPushEvent) {
 	var commit GitCommit = payload.Commit
-	fmt.Println("\n----------------")
+	fmt.Println("---------------")
 	fmt.Printf("\x1b[1mReceived webhook for commit:\x1b[0m \n%s \"%s\" \nat %s\n", commit.ID, commit.Message, time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
 
 	triggerChanged := false
@@ -156,7 +168,7 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 			elapsed := time.Since(start)
 			fmt.Printf(" in %s\n", elapsed)
 		}
-		print("\n")
+		fmt.Println("\nStill listening...\n")
 	}
 }
 
