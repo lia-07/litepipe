@@ -1,0 +1,6 @@
+{
+  "port": 3001,
+  "webhookSecret": "secret",
+  "triggerDirectories": ["folder/directory"],
+  "tasks": ["npm build", "npm serve"]
+}
