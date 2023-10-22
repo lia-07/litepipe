@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 )
@@ -56,7 +57,7 @@ func main() {
 
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("\033[30;46m LitePipe \033[0m version 0.0.2")
+	fmt.Println("\033[30;46m LitePipe \033[0m version 0.1.2")
 	fmt.Printf("PID: %d\n", os.Getpid())
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 	http.ListenAndServe(":3001", nil)
@@ -106,46 +107,57 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	var commit GitCommit = payload.Commit
-	fmt.Println("--------")
-	fmt.Printf("Received webhook push event for commit \n%s \n\"%s\" \nat %s\n", commit.ID, commit.Message, time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
+	fmt.Println("\n----------------")
+	fmt.Printf("\x1b[1mReceived webhook for commit:\x1b[0m \n%s \"%s\" \nat %s\n", commit.ID, commit.Message, time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
+
+	triggerChanged := false
 
 	if len(commit.Added) > 0 {
-		fmt.Println("\nAdded files:")
 		for _, file := range commit.Added {
 			if pathsMatch(file) {
-				fmt.Printf("\u001b[7m%s\033[0m\n", file)
-			} else {
-				fmt.Println(file)
-
+				triggerChanged = true
 			}
 		}
 	}
 
 	if len(commit.Modified) > 0 {
-		fmt.Println("\nModified files:")
 		for _, file := range commit.Modified {
-
 			if pathsMatch(file) {
-				fmt.Printf("\u001b[7m%s\033[0m\n", file)
-			} else {
-				fmt.Println(file)
+				triggerChanged = true
 			}
 		}
 	}
 
 	if len(commit.Removed) > 0 {
-		fmt.Println("\nRemoved files:")
 		for _, file := range commit.Removed {
 			if pathsMatch(file) {
-				fmt.Printf("\u001b[7m%s\033[0m\n", file)
-			} else {
-				fmt.Println(file)
-
+				triggerChanged = true
 			}
 		}
 	}
 
-	fmt.Println()
+	if triggerChanged {
+		fmt.Printf("\n\x1b[1mOne or more changes in trigger directory/ies, running tasks...\x1b[0m\n")
+		for i, task := range config.Tasks {
+			fmt.Printf("\n\x1b[1m(%d/%d):\x1b[0m %s\n", i+1, len(config.Tasks), task)
+
+			start := time.Now()
+
+			cmd := exec.Command("bash", "-c", task)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("\x1b[101;30m Task failed: \x1b[0m %s", err)
+			} else {
+				fmt.Print("Task succeeded")
+			}
+
+			elapsed := time.Since(start)
+			fmt.Printf(" in %s\n", elapsed)
+		}
+		print("\n")
+	}
 }
 
 func verifyWebhookSignature(signature string, payload []byte) bool {
