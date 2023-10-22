@@ -168,7 +168,7 @@ func processWebhookPayload(payload GitPushEvent) {
 			elapsed := time.Since(start)
 			fmt.Printf(" in %s\n", elapsed)
 		}
-		fmt.Println("\nStill listening...\n")
+		fmt.Print("\nStill listening...\n\n")
 	}
 }
 
