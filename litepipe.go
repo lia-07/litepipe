@@ -66,7 +66,7 @@ func setDefaultsAndValidateConfig() {
 func start() {
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.4")
+	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.5")
 	fmt.Printf("PID: %d\n", os.Getpid())
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 
@@ -91,8 +91,8 @@ type GitPushEvent struct {
 }
 
 func HandleWebhook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("")
-	body, err := io.ReadAll(r.Response.Request.Body)
+	fmt.Println(io.ReadAll(r.Response.Body))
+	body, err := io.ReadAll(r.Response.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 		return
