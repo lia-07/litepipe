@@ -91,7 +91,8 @@ type GitPushEvent struct {
 }
 
 func HandleWebhook(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+	fmt.Println("")
+	body, err := io.ReadAll(r.Response.Request.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 		return
