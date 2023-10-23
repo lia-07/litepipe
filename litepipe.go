@@ -72,7 +72,7 @@ func setDefaultsAndValidateConfig() {
 func start() {
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.9")
+	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.10")
 	fmt.Printf("PID: %d\n", os.Getpid())
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 
@@ -157,20 +157,20 @@ func processWebhookPayload(payload GitPushEvent) {
 	if triggerChanged {
 		fmt.Printf("\n\x1b[1mOne or more changes in trigger directory/ies, running tasks...\x1b[0m\n")
 		for i, task := range config.Tasks {
-			fmt.Printf("\n\x1b[1m(%d/%d):\x1b[0m %s\n", i+1, len(config.Tasks), task)
+			fmt.Printf("\n\x1b[1m(%d/%d): %s\n\x1b[0m", i+1, len(config.Tasks), task)
 
 			start := time.Now()
 
 			cmd := exec.Command("bash", "-c", task)
 
 			// output command outputs - maybe add a flag to show?
-			// cmd.Stdout = os.Stdout
-			// cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 
 			if err := cmd.Run(); err != nil {
 				fmt.Printf("\x1b[101;30m Task failed: \x1b[0m %s", err)
 			} else {
-				fmt.Print("Task completed")
+				fmt.Print("\n\x1b[1mTask completed\x1b[0m")
 			}
 
 			elapsed := time.Since(start)
