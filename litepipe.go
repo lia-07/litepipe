@@ -156,13 +156,15 @@ func processWebhookPayload(payload GitPushEvent) {
 			start := time.Now()
 
 			cmd := exec.Command("bash", "-c", task)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
+
+			// output command outputs - maybe add a flag to show?
+			// cmd.Stdout = os.Stdout
+			// cmd.Stderr = os.Stderr
 
 			if err := cmd.Run(); err != nil {
 				fmt.Printf("\x1b[101;30m Task failed: \x1b[0m %s", err)
 			} else {
-				fmt.Print("Task succeeded")
+				fmt.Print("Task completed")
 			}
 
 			elapsed := time.Since(start)
