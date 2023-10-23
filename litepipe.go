@@ -66,7 +66,7 @@ func setDefaultsAndValidateConfig() {
 func start() {
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.7")
+	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.8")
 	fmt.Printf("PID: %d\n", os.Getpid())
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 
@@ -96,8 +96,6 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println(body)
 
 	signature := r.Header.Get("X-Hub-Signature")
 	if !verifyWebhookSignature(signature, body) {
