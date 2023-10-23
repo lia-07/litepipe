@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,7 +30,12 @@ func main() {
 }
 
 func loadConfig() {
-	file, err := os.Open("config.json")
+	// load flags
+	configPath := flag.String("config", "config.json", "The path to the config file")
+
+	flag.Parse()
+
+	file, err := os.Open(*configPath)
 	if err != nil {
 		fmt.Printf("Error opening config file: %v\n", err)
 		os.Exit(1)
@@ -66,7 +72,7 @@ func setDefaultsAndValidateConfig() {
 func start() {
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.8")
+	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.9")
 	fmt.Printf("PID: %d\n", os.Getpid())
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 
