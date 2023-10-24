@@ -15,7 +15,25 @@ import (
 	"time"
 )
 
-type Config struct {
+func main() {
+
+	// read the flags
+	configPath := flag.String("config", "config.json", "The path to the config file")
+	flag.Parse()
+
+	loadConfig(*configPath)
+
+	http.HandleFunc("/", HandleWebhook)
+
+	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.13")
+	fmt.Printf("PID: %d\n", os.Getpid())
+	fmt.Printf("Listening on port %d\n\n", config.Port)
+
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
+
+}
+
+var config struct {
 	Port               int      `json:"port"`
 	WebhookSecret      string   `json:"webhookSecret"`
 	TriggerDirectories []string `json:"triggerDirectories"`
@@ -23,20 +41,8 @@ type Config struct {
 	TasksDirectory     string   `json:"tasksDirectory"`
 }
 
-var config Config
-
-func main() {
-	loadConfig()
-	start()
-}
-
-func loadConfig() {
-	// load flags
-	configPath := flag.String("config", "config.json", "The path to the config file")
-
-	flag.Parse()
-
-	file, err := os.Open(*configPath)
+func loadConfig(path string) {
+	file, err := os.Open(path)
 	if err != nil {
 		fmt.Printf("Error opening config file: %v\n", err)
 		os.Exit(1)
@@ -50,21 +56,24 @@ func loadConfig() {
 		os.Exit(1)
 	}
 
-	setDefaultsAndValidateConfig()
+	validateConfig()
 }
 
-func setDefaultsAndValidateConfig() {
+func validateConfig() {
 	if config.Port == 0 {
 		config.Port = 3001
 	}
+
 	if config.WebhookSecret == "" {
 		fmt.Println("You need to provide your webhook secret")
 		os.Exit(1)
 	}
+
 	if config.TriggerDirectories == nil || len(config.TriggerDirectories) == 0 {
 		fmt.Println("No trigger directories specified, defaulting to *")
 		config.TriggerDirectories = []string{"*"}
 	}
+
 	if config.Tasks == nil || len(config.Tasks) == 0 {
 		fmt.Println("There needs to be at least one task")
 		os.Exit(1)
@@ -75,17 +84,7 @@ func setDefaultsAndValidateConfig() {
 	}
 }
 
-func start() {
-	http.HandleFunc("/", HandleWebhook)
-
-	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.12")
-	fmt.Printf("PID: %d\n", os.Getpid())
-	fmt.Printf("Listening on port %d\n\n", config.Port)
-
-	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
-}
-
-type GitCommit struct {
+type commit struct {
 	Added    []string `json:"added"`
 	Modified []string `json:"modified"`
 	Removed  []string `json:"removed"`
@@ -98,8 +97,8 @@ type GitCommit struct {
 	Timestamp string `json:"timestamp"`
 }
 
-type GitPushEvent struct {
-	Commit GitCommit `json:"head_commit"`
+type webhookBody struct {
+	Commit commit `json:"head_commit"`
 }
 
 func HandleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -110,13 +109,13 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	signature := r.Header.Get("X-Hub-Signature")
-	if !verifyWebhookSignature(signature, body) {
+	if !validWebhookSignature(signature, body) {
 		fmt.Println("Invalid Webhook")
 		http.Error(w, "Invalid Webhook", http.StatusForbidden)
 		return
 	}
 
-	var payload GitPushEvent
+	var payload webhookBody
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		fmt.Println("Failed to parse JSON payload:", err)
@@ -129,8 +128,8 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	processWebhookPayload(payload)
 }
 
-func processWebhookPayload(payload GitPushEvent) {
-	var commit GitCommit = payload.Commit
+func processWebhookPayload(payload webhookBody) {
+	var commit commit = payload.Commit
 	fmt.Println("---------------")
 	fmt.Printf("\x1b[1mReceived webhook for commit:\x1b[0m \n%s \"%s\" \nat %s\n", commit.ID, commit.Message, time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
 
@@ -192,7 +191,7 @@ func processWebhookPayload(payload GitPushEvent) {
 
 }
 
-func verifyWebhookSignature(signature string, payload []byte) bool {
+func validWebhookSignature(signature string, payload []byte) bool {
 	mac := hmac.New(sha1.New, []byte(config.WebhookSecret))
 	_, err := mac.Write(payload)
 	if err != nil {
