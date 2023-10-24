@@ -6,5 +6,6 @@
     "directory2/*.html",
     "directory2/*/*.css"
   ],
-  "tasks": ["echo Hello, World"]
+  "tasks": ["echo Hello, World"],
+  "tasksDirectory": "directory/another_directory"
 }

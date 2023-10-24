@@ -20,6 +20,7 @@ type Config struct {
 	WebhookSecret      string   `json:"webhookSecret"`
 	TriggerDirectories []string `json:"triggerDirectories"`
 	Tasks              []string `json:"tasks"`
+	TasksDirectory     string   `json:"tasksDirectory"`
 }
 
 var config Config
@@ -61,18 +62,23 @@ func setDefaultsAndValidateConfig() {
 		os.Exit(1)
 	}
 	if config.TriggerDirectories == nil || len(config.TriggerDirectories) == 0 {
+		fmt.Println("No trigger directories specified, defaulting to *")
 		config.TriggerDirectories = []string{"*"}
 	}
 	if config.Tasks == nil || len(config.Tasks) == 0 {
 		fmt.Println("There needs to be at least one task")
 		os.Exit(1)
 	}
+
+	if config.TasksDirectory == "" {
+		fmt.Println("No directory for tasks to be executed in specified, defaulting to current directory")
+	}
 }
 
 func start() {
 	http.HandleFunc("/", HandleWebhook)
 
-	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.10")
+	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.12")
 	fmt.Printf("PID: %d\n", os.Getpid())
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 
@@ -162,6 +168,7 @@ func processWebhookPayload(payload GitPushEvent) {
 			start := time.Now()
 
 			cmd := exec.Command("bash", "-c", task)
+			cmd.Dir = config.TasksDirectory
 
 			// output command outputs - maybe add a flag to show?
 			cmd.Stdout = os.Stdout
@@ -170,14 +177,19 @@ func processWebhookPayload(payload GitPushEvent) {
 			if err := cmd.Run(); err != nil {
 				fmt.Printf("\x1b[101;30m Task failed: \x1b[0m %s", err)
 			} else {
-				fmt.Print("\n\x1b[1mTask completed\x1b[0m")
+				fmt.Print("\x1b[1mTask completed\x1b[0m")
 			}
 
 			elapsed := time.Since(start)
 			fmt.Printf(" in %s\n", elapsed)
 		}
-		fmt.Print("\nStill listening...\n\n")
+	} else {
+		fmt.Printf("\n\x1b[1mNo changes in trigger directory/ies\x1b[0m\n")
+
 	}
+
+	fmt.Print("\nStill listening...\n\n")
+
 }
 
 func verifyWebhookSignature(signature string, payload []byte) bool {
