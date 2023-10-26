@@ -2,6 +2,8 @@
 
 LitePipe is a simple CI/CD tool written in Go using only the standard library. It's goal is to be lightweight and reliable. In a nutshell, it listens for webhook POST requests, verifies them, checks if some user-defined criteria were met, and if so runs some user-defined commands. It currently exclusively supports GitHub pull request webhooks, but in the future I aim to add more flexibility.
 
+Backwards compatibility is not yet guaranteed.
+
 ## Setup
 
 After cloning this repo, (assuming you have Go installed) simply run `go build litepipe.go`.
