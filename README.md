@@ -36,4 +36,8 @@ Here are descriptions of the different arguments:
 By default, LitePipe looks for `config.json` in the same directory it is in. The configuration file should looks something like this:
 If necessary (for example, if LitePipe is running in a `systemctl` environment) you can specify a custom path for the configuration file with the `-config` flag. For example, on a UNIX/UNIX-like system you could run `./litepipe -config "/home/user/litepipe/config.json"`.
 
+## Future goals
+
+I would like to make LitePipe more flexible and add support for different "pipes", i.e. different webhooks/directories affected by commits cause different outcomes. I also want to add support for different types of webhooks, and even support user-defined events for use as a more general purpose automation tool.
+
 After creating the configuration file, you simply need to execute the LitePipe binary. Personally, I set it up behind an Nginx reverse proxy, and haven't tested other configurations.
