@@ -11,7 +11,7 @@ Then, you must create a configuration file.
 
 The configuration file should looks something like this:
 
-```
+```json
 {
   "port": 3001,
   "webhookSecret": "secret",
