@@ -1,6 +1,6 @@
 # LitePipe
 
-LitePipe is a simple CI/CD tool written in Go using only the standard library. Currently, it will listen for GitHub push webhooks, verify them, and then perform certain actions based on which path the change occurred in. Different types of webhooks will be added as needed (feel free to contribute).
+LitePipe is a simple CI/CD tool written in Go using only the standard library. Currently, it will listen for GitHub push webhooks, verify them, and then perform certain actions based on which path the change occurred in. Support for different types of webhooks will be added as needed (feel free to contribute).
 
 Backwards compatibility is not yet guaranteed.
 
