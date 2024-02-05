@@ -1,6 +1,6 @@
 # LitePipe
 
-LitePipe is a simple CI/CD tool written in Go using only the standard library. It's goal is to be lightweight and reliable. In a nutshell, it listens for webhook POST requests, verifies them, checks if some user-defined criteria were met, and if so runs some user-defined commands. It currently exclusively supports GitHub pull request webhooks, but in the future I aim to add more flexibility.
+LitePipe is a simple CI/CD tool written in Go using only the standard library. Currently, it will listen for GitHub push webhooks, verify them, and then perform certain actions based on which path the change occurred in. Different types of webhooks will be added as needed (feel free to contribute).
 
 Backwards compatibility is not yet guaranteed.
 
@@ -38,8 +38,4 @@ Here are descriptions of the different arguments:
 By default, LitePipe looks for `config.json` in the same directory it is in.
 If necessary (for example, if LitePipe is running in a `systemctl` environment) you can specify a custom path for the configuration file with the `-config` flag. For example, on a UNIX/UNIX-like system you could run `./litepipe -config "/home/user/litepipe/config.json"`.
 
-## Future goals
-
-I would like to make LitePipe more flexible and add support for different "pipes", i.e. different webhooks/directories affected by commits cause different outcomes. I also want to add support for different types of webhooks, and even support user-defined events for use as a more general purpose automation tool.
-
-After creating the configuration file, you simply need to execute the LitePipe binary. Personally, I set it up behind an Nginx reverse proxy, and haven't tested other configurations.
+After creating the configuration file, you simply need to execute the LitePipe binary. I have it set up with `systemctl` on my Ubuntu VPS, behind an Nginx reverse proxy. 
