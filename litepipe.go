@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,21 +17,38 @@ import (
 )
 
 func main() {
+	fmt.Printf("\nLitePipe version 0.1.14\n")
+	fmt.Printf("PID: %d\n", os.Getpid())
 
-	// read the flags
 	configPath := flag.String("config", "config.json", "The path to the config file")
 	flag.Parse()
 
 	loadConfig(*configPath)
 
-	http.HandleFunc("/", HandleWebhook)
+	// Try to find an available port starting from the configured one
+	for {
+		err := tryListenAndServe(config.Port)
+		if err == nil {
+			break
+		}
 
-	fmt.Println("\n\033[30;46m LitePipe \033[0m version 0.1.13")
-	fmt.Printf("PID: %d\n", os.Getpid())
+		fmt.Printf("\nPort %d is not available, trying the next one...\n", config.Port)
+		config.Port++
+	}
+
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
+}
 
+func tryListenAndServe(port int) error {
+	addr := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	defer listener.Close()
+	return nil
 }
 
 var config struct {
@@ -131,7 +149,7 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 func processWebhookPayload(payload webhookBody) {
 	var commit commit = payload.Commit
 	fmt.Println("---------------")
-	fmt.Printf("\x1b[1mReceived webhook for commit:\x1b[0m \n%s \"%s\" \nat %s\n", commit.ID, commit.Message, time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
+	fmt.Printf("Received webhook for commit: \n%s \"%s\" \nat %s\n", commit.ID, commit.Message, time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
 
 	triggerChanged := false
 
@@ -160,9 +178,9 @@ func processWebhookPayload(payload webhookBody) {
 	}
 
 	if triggerChanged {
-		fmt.Printf("\n\x1b[1mOne or more changes in trigger directory/ies, running tasks...\x1b[0m\n")
+		fmt.Printf("\nOne or more changes in trigger directory/ies, running tasks...\n")
 		for i, task := range config.Tasks {
-			fmt.Printf("\n\x1b[1m(%d/%d): %s\n\x1b[0m", i+1, len(config.Tasks), task)
+			fmt.Printf("\n(%d/%d): %s\n\x1b[0m", i+1, len(config.Tasks), task)
 
 			start := time.Now()
 
@@ -174,16 +192,16 @@ func processWebhookPayload(payload webhookBody) {
 			cmd.Stderr = os.Stderr
 
 			if err := cmd.Run(); err != nil {
-				fmt.Printf("\x1b[101;30m Task failed: \x1b[0m %s", err)
+				fmt.Printf("Task failed: %s", err)
 			} else {
-				fmt.Print("\x1b[1mTask completed\x1b[0m")
+				fmt.Print("Task completed")
 			}
 
 			elapsed := time.Since(start)
 			fmt.Printf(" in %s\n", elapsed)
 		}
 	} else {
-		fmt.Printf("\n\x1b[1mNo changes in trigger directory/ies\x1b[0m\n")
+		fmt.Printf("\nNo changes in trigger directory/ies\n")
 
 	}
 
