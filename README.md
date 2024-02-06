@@ -35,7 +35,7 @@ Here are descriptions of the different arguments:
 - **`tasks`:** The tasks (commands) to be executed.
 - **`tasksDirectory`:** The directory the tasks will be executed in. Optional, and defaults to the directory LitePipe is running in.
 
-By default, LitePipe looks for `config.json` in the same directory it is in. The configuration file should looks something like this:
+By default, LitePipe looks for `config.json` in the same directory it is in.
 If necessary (for example, if LitePipe is running in a `systemctl` environment) you can specify a custom path for the configuration file with the `-config` flag. For example, on a UNIX/UNIX-like system you could run `./litepipe -config "/home/user/litepipe/config.json"`.
 
 ## Future goals
