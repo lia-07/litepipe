@@ -38,6 +38,8 @@ func main() {
 
 	fmt.Printf("Listening on port %d\n\n", config.Port)
 
+	http.HandleFunc("/", HandleWebhook)
+
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
 }
 
