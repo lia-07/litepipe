@@ -54,11 +54,11 @@ func tryListenAndServe(port int) error {
 }
 
 var config struct {
-	Port               int      `json:"port"`
-	WebhookSecret      string   `json:"webhookSecret"`
-	TriggerDirectories []string `json:"triggerDirectories"`
-	Tasks              []string `json:"tasks"`
-	TasksDirectory     string   `json:"tasksDirectory"`
+	Port           int      `json:"port"`
+	WebhookSecret  string   `json:"webhookSecret"`
+	TriggerPaths   []string `json:"triggerPaths"`
+	Tasks          []string `json:"tasks"`
+	TasksDirectory string   `json:"tasksDirectory"`
 }
 
 func loadConfig(path string) {
@@ -89,9 +89,9 @@ func validateConfig() {
 		os.Exit(1)
 	}
 
-	if config.TriggerDirectories == nil || len(config.TriggerDirectories) == 0 {
+	if config.TriggerPaths == nil || len(config.TriggerPaths) == 0 {
 		fmt.Println("No trigger directories specified, defaulting to *")
-		config.TriggerDirectories = []string{"*"}
+		config.TriggerPaths = []string{"*"}
 	}
 
 	if config.Tasks == nil || len(config.Tasks) == 0 {
@@ -182,7 +182,7 @@ func processWebhookPayload(payload webhookBody) {
 	if triggerChanged {
 		fmt.Printf("\nOne or more changes in trigger directory/ies, running tasks...\n")
 		for i, task := range config.Tasks {
-			fmt.Printf("\n(%d/%d): %s\n\x1b[0m", i+1, len(config.Tasks), task)
+			fmt.Printf("\n(%d/%d): %s\n", i+1, len(config.Tasks), task)
 
 			start := time.Now()
 
@@ -225,7 +225,7 @@ func validWebhookSignature(signature string, payload []byte) bool {
 }
 
 func pathsMatch(path string) bool {
-	for _, pattern := range config.TriggerDirectories {
+	for _, pattern := range config.TriggerPaths {
 		matched, err := filepath.Match(pattern, path)
 		if err != nil {
 			fmt.Println("Error:", err)

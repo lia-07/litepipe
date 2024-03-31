@@ -17,11 +17,7 @@ The configuration file should looks something like this:
 {
   "port": 3001,
   "webhookSecret": "secret",
-  "triggerDirectories": [
-    "directory/*",
-    "directory2/*.html",
-    "directory2/*/*.css"
-  ],
+  "triggerPaths": ["directory/*", "directory2/*.html", "directory2/*/*.css"],
   "tasks": ["echo Hello, World"],
   "tasksDirectory": "directory/another_directory"
 }
@@ -31,7 +27,7 @@ Here are descriptions of the different arguments:
 
 - **`port`:** Sets the localhost port LitePipe should listen on. Optional, and defaults to `3001`.
 - **`webhookSecret`:** Where you put the webhook secret.
-- **`triggerDirectories`:** If a commit affects one of the directories listed here, the tasks will be executed. Optional, and defaults to `*`.
+- **`triggerPaths`:** If a commit affects one of the directories or files listed here, the tasks will be executed. Optional, and defaults to `*`.
 - **`tasks`:** The tasks (commands) to be executed.
 - **`tasksDirectory`:** The directory the tasks will be executed in. Optional, and defaults to the directory LitePipe is running in.
 
