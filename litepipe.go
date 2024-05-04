@@ -54,11 +54,11 @@ func tryListenAndServe(port int) error {
 }
 
 var config struct {
-	Port           int      `json:"port"`
-	WebhookSecret  string   `json:"webhookSecret"`
-	TriggerPaths   []string `json:"triggerPaths"`
-	Tasks          []string `json:"tasks"`
-	TasksDirectory string   `json:"tasksDirectory"`
+	Port                  int      `json:"port"`
+	WebhookSecret         string   `json:"webhookSecret"`
+	TriggerPaths          []string `json:"triggerPaths"`
+	Tasks                 []string `json:"tasks"`
+	TasksWorkingDirectory string   `json:"tasksWorkingDirectory"`
 }
 
 func loadConfig(path string) {
@@ -90,7 +90,7 @@ func validateConfig() {
 	}
 
 	if config.TriggerPaths == nil || len(config.TriggerPaths) == 0 {
-		fmt.Println("No trigger directories specified, defaulting to *")
+		fmt.Println("No trigger paths specified, defaulting to *")
 		config.TriggerPaths = []string{"*"}
 	}
 
@@ -99,8 +99,8 @@ func validateConfig() {
 		os.Exit(1)
 	}
 
-	if config.TasksDirectory == "" {
-		fmt.Println("No directory for tasks to be executed in specified, defaulting to current directory")
+	if config.TasksWorkingDirectory == "" {
+		fmt.Println("No working directory for tasks to be executed in specified, defaulting to current directory")
 	}
 }
 
@@ -180,14 +180,14 @@ func processWebhookPayload(payload webhookBody) {
 	}
 
 	if triggerChanged {
-		fmt.Printf("\nOne or more changes in trigger directory/ies, running tasks...\n")
+		fmt.Printf("\nOne or more changes in trigger paths, running tasks...\n")
 		for i, task := range config.Tasks {
 			fmt.Printf("\n(%d/%d): %s\n", i+1, len(config.Tasks), task)
 
 			start := time.Now()
 
 			cmd := exec.Command("bash", "-c", task)
-			cmd.Dir = config.TasksDirectory
+			cmd.Dir = config.TasksWorkingDirectory
 
 			// output command outputs - maybe add a flag to show?
 			cmd.Stdout = os.Stdout
@@ -203,7 +203,7 @@ func processWebhookPayload(payload webhookBody) {
 			fmt.Printf(" in %s\n", elapsed)
 		}
 	} else {
-		fmt.Printf("\nNo changes in trigger directory/ies\n")
+		fmt.Printf("\nNo changes in trigger paths\n")
 
 	}
 

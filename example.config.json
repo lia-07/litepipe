@@ -3,5 +3,5 @@
   "webhookSecret": "secret",
   "triggerPaths": ["directory/*", "directory2/*.html", "directory2/*/*.css"],
   "tasks": ["echo Hello, World"],
-  "tasksDirectory": "directory/another_directory"
+  "tasksWorkingDirectory": "directory/another_directory"
 }
