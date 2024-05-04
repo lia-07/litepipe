@@ -25,15 +25,10 @@ func main() {
 
 	loadConfig(*configPath)
 
-	// Try to find an available port starting from the configured one
-	for {
-		err := tryListenAndServe(config.Port)
-		if err == nil {
-			break
-		}
-
-		fmt.Printf("\nPort %d is not available, trying the next one...\n", config.Port)
-		config.Port++
+	err := tryListenAndServe(config.Port)
+	if err != nil {
+		fmt.Printf("Port %d is unavailable\n", config.Port)
+		return
 	}
 
 	fmt.Printf("Listening on port %d\n\n", config.Port)
@@ -124,7 +119,6 @@ type webhookBody struct {
 func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 		return
 	}
 
@@ -189,7 +183,6 @@ func processWebhookPayload(payload webhookBody) {
 			cmd := exec.Command("bash", "-c", task)
 			cmd.Dir = config.TasksWorkingDirectory
 
-			// output command outputs - maybe add a flag to show?
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 
